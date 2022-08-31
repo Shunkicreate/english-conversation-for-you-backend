@@ -3,7 +3,8 @@ import os
 from flask import Flask, abort, request, make_response, jsonify
 import functools
 from youtube_transcript_api import YouTubeTranscriptApi
-import re
+from re import sub, search
+
 # print a nice greeting.
 def say_hello(username = "World"):
     return '<p>Hello %s!</p>\n' % username
@@ -35,6 +36,18 @@ def content_type(value):
         return wrapper
     return _content_type
 
+def get_video_id(url:str):
+    pattern  = 'v=.*' 
+    # pattern  = '5G' 
+    video_id = search(pattern, url).group()
+    video_id = sub('v=', '', video_id)
+    if('&' in video_id):
+        pattern = '.*&'
+        video_id  = search(pattern, video_id).group()
+        video_id = sub('&', '', video_id)
+    return(video_id)
+
+
 # add a rule for the index page.
 app.add_url_rule('/', 'index', (lambda: header_text +
     say_hello() + instructions + footer_text))
@@ -48,15 +61,18 @@ app.add_url_rule('/<username>', 'hello', (lambda username:
 @content_type('application/json')
 def youtubeDlSubtitles():
     url = request.json['url']
-    pattern  = r'v=.+' 
-    content = 'hel'
-    video_id = re.match(pattern)
-    print(video_id)
     print(url)
+    video_id = get_video_id(url)
+    srt = YouTubeTranscriptApi.get_transcript('yKrTY4AsB2c',languages=['ja'])
+    print(srt.translate('en'))
     try:
         srt = YouTubeTranscriptApi.get_transcript(video_id)
+        
     except Exception as e:
         return(e)
+    # for transcript in transcript_list:
+    # #英語の字幕を日本語に翻訳して出力
+    #     print(transcript.translate('en').fetch())
     return srt
 # run the app.
 if __name__ == "__main__":
