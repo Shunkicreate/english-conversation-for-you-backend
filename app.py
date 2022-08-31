@@ -4,7 +4,8 @@ from flask import Flask, abort, request, make_response, jsonify
 import functools
 from youtube_transcript_api import YouTubeTranscriptApi
 from re import sub, search
-
+import time
+import timeout_decorator
 # print a nice greeting.
 def say_hello(username = "World"):
     return '<p>Hello %s!</p>\n' % username
@@ -47,6 +48,9 @@ def get_video_id(url:str):
         video_id = sub('&', '', video_id)
     return(video_id)
 
+@timeout_decorator.timeout(10, timeout_exception=StopIteration)
+def get_transcript_timeout(video_id, languages = ['en']):
+    return YouTubeTranscriptApi.get_transcript(video_id,languages=[languages])
 
 # add a rule for the index page.
 app.add_url_rule('/', 'index', (lambda: header_text +
@@ -63,10 +67,10 @@ def youtubeDlSubtitles():
     url = request.json['url']
     print(url)
     video_id = get_video_id(url)
-    srt = YouTubeTranscriptApi.get_transcript('yKrTY4AsB2c',languages=['ja'])
+    srt = get_transcript_timeout('yKrTY4AsB2c',languages=['ja'])
     print(srt.translate('en'))
     try:
-        srt = YouTubeTranscriptApi.get_transcript(video_id)
+        srt = get_transcript_timeout(video_id)
         
     except Exception as e:
         return(e)
