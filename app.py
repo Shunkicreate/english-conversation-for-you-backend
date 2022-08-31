@@ -60,8 +60,9 @@ def get_video_id(url: str):
 @wrapt_timeout_decorator.timeout(dec_timeout=5)
 def get_transcript_timeout(video_id, languages=['en']):
     print(video_id, languages)
-    result_str = YouTubeTranscriptApi.get_transcript(video_id, languages=languages)
-    if(languages != 'en'):
+    result_str = YouTubeTranscriptApi.get_transcript(
+        video_id, languages=languages)
+    if (languages != 'en'):
         None
         # print(result_str.translate('en'))
         # result_str = result_str.translate('en')
@@ -72,10 +73,8 @@ def get_transcript_timeout(video_id, languages=['en']):
 
 def proc(video_id, languages=['en']):
     try:
-        # 『長い時間がかかるかもしれない関数』を実行します。
         result = get_transcript_timeout(video_id, languages)
     except TimeoutError as e:
-        # タイムアウトしました。
         result = e.__class__.__name__
         print(result)
         print(traceback.format_exception_only(type(e), e)[0].rstrip('\n'))
@@ -84,14 +83,11 @@ def proc(video_id, languages=['en']):
 
 
 # add a rule for the index page.
-app.add_url_rule('/', 'index', (lambda: header_text +
-                                say_hello() + instructions + footer_text))
+app.add_url_rule('/', 'index', (lambda: header_text + say_hello() + instructions + footer_text))
 
 # add a rule when the page is accessed with a name appended to the site
 # URL.
-app.add_url_rule('/<username>', 'hello', (lambda username:
-                                          header_text + say_hello(username) + home_link + footer_text))
-
+app.add_url_rule('/<username>', 'hello', (lambda username: header_text + say_hello(username) + home_link + footer_text))
 
 @app.route('/youtubeDlSubtitles', methods=['GET'])
 @content_type('application/json')
