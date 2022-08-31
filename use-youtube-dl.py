@@ -1,6 +1,6 @@
-import youtube_dl
-ydl_opts = {
-    
-}
-with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-    ydl.download(['https://www.youtube.com/watch?v=rqdHkPZnEv0'])
+
+from youtube_transcript_api import YouTubeTranscriptApi
+# assigning srt variable with the list
+# of dictonaries obtained by the get_transcript() function
+srt = YouTubeTranscriptApi.get_transcript(video_id = "ffVu3GZLVFQ", languages='en')
+print(srt)

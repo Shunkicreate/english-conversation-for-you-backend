@@ -2,7 +2,8 @@ from flask import Flask
 import os
 from flask import Flask, abort, request, make_response, jsonify
 import functools
-import youtube_dl
+from youtube_transcript_api import YouTubeTranscriptApi
+import re
 # print a nice greeting.
 def say_hello(username = "World"):
     return '<p>Hello %s!</p>\n' % username
@@ -46,8 +47,17 @@ app.add_url_rule('/<username>', 'hello', (lambda username:
 @app.route('/youtubeDlSubtitles', methods=['GET'])
 @content_type('application/json')
 def youtubeDlSubtitles():
-    
-    return make_response(request.get_data())
+    url = request.json['url']
+    pattern  = r'v=.+' 
+    content = 'hel'
+    video_id = re.match(pattern)
+    print(video_id)
+    print(url)
+    try:
+        srt = YouTubeTranscriptApi.get_transcript(video_id)
+    except Exception as e:
+        return(e)
+    return srt
 # run the app.
 if __name__ == "__main__":
     # Setting debug to True enables debug output. This line should be
