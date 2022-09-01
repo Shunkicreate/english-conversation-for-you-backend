@@ -1,6 +1,6 @@
 ssh connection command
 ssh -i .ssh/english-conversation-for-you-backend.pem ubuntu@13.112.150.63
-
+scp -i .ssh/english-conversation-for-you-backend.pem app.py requirements.txt ubuntu@13.112.150.63:/home/ubuntu/english-conversation-for-you-backend
 wsl ec2 ubuntu initialize method
 sudo apt update
 sudo apt upgrade
