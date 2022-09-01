@@ -3,7 +3,7 @@ import os
 from flask import Flask, abort, request, make_response, jsonify
 import functools
 from youtube_transcript_api import YouTubeTranscriptApi
-from re import sub, search
+from re import sub, search, split
 import time
 import wrapt_timeout_decorator
 import traceback  # デバッグ用
@@ -57,16 +57,35 @@ def get_video_id(url: str):
     return (video_id)
 
 
-@wrapt_timeout_decorator.timeout(dec_timeout=5)
+def english_translator(result_obj):
+    unite = ""
+    for i in result_obj:
+        unite += i['text']
+    translator = Translator()
+    result = translator.translate(unite, dest="en").text
+    words = split('[. ]', result)
+    one_phrase_len = int(len(words)/len(result_obj)) + 1
+    for i, content in enumerate(result_obj):
+        if (i != len(result_obj) - 1):
+            content['text'] = ' '.join(words[i * one_phrase_len:i * one_phrase_len + one_phrase_len])
+        else:
+            content['text'] = ' '.join(words[i * one_phrase_len:])
+    return result_obj
+
+@wrapt_timeout_decorator.timeout(dec_timeout=500)
 def get_transcript_timeout(video_id, languages=['en']):
     print(video_id, languages)
     result_str = YouTubeTranscriptApi.get_transcript(
         video_id, languages=languages)
-    if (languages != 'en'):
-        None
+    if (not 'en' in languages):
+        result_str = english_translator(result_str)
+        # translator = Translator()
+        # for i in result_str:
+        #     print(i['text'])
+        #     i['text'] = translator.translate(i['text'], dest="en").text
+        #     print(i['text'])
         # print(result_str.translate('en'))
         # result_str = result_str.translate('en')
-        # translator = Translator()
         # result_str = translator.translate(result_str, dest="en")
     return result_str
 
@@ -80,32 +99,41 @@ def proc(video_id, languages=['en']):
         print(traceback.format_exception_only(type(e), e)[0].rstrip('\n'))
     else:
         print('no errors')
+    return result
 
 
 # add a rule for the index page.
-app.add_url_rule('/', 'index', (lambda: header_text + say_hello() + instructions + footer_text))
+app.add_url_rule('/', 'index', (lambda: header_text +
+                 say_hello() + instructions + footer_text))
 
 # add a rule when the page is accessed with a name appended to the site
 # URL.
-app.add_url_rule('/<username>', 'hello', (lambda username: header_text + say_hello(username) + home_link + footer_text))
+app.add_url_rule('/<username>', 'hello', (lambda username: header_text +
+                 say_hello(username) + home_link + footer_text))
+
 
 @app.route('/youtubeDlSubtitles', methods=['GET'])
 @content_type('application/json')
 def youtubeDlSubtitles():
     url = request.json['url']
     print(url)
-    video_id = get_video_id(url)
-    srt = proc(video_id, languages=['ja'])
     # print(srt.translate('en'))
+    video_id = get_video_id(url)
+    result_str = ""
     try:
-        srt = proc(video_id)
-
+        result_str = proc(video_id)
     except Exception as e:
-        return (e)
+        print(e)
+    if (result_str == ""):
+        try:
+            result_str = proc(video_id, languages=['ja'])
+        except Exception as e:
+            print(e)
+
     # for transcript in transcript_list:
     # #英語の字幕を日本語に翻訳して出力
     #     print(transcript.translate('en').fetch())
-    return srt
+    return str(result_str)
 
 
 # run the app.
