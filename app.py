@@ -9,7 +9,7 @@ import wrapt_timeout_decorator
 import traceback  # デバッグ用
 from googletrans import Translator
 import datetime
-
+from flask_cors import CORS
 # print a nice greeting.
 
 
@@ -29,7 +29,7 @@ footer_text = '</body>\n</html>'
 
 # EB looks for an 'app' callable by default.
 app = Flask(__name__)
-
+CORS(app, origins=["https://example.com", "http://localhost:3000", "http://localhost:3001"]) 
 
 def content_type(value):
     def _content_type(func):
@@ -124,9 +124,10 @@ app.add_url_rule('/<username>', 'hello', (lambda username: header_text +
                  say_hello(username) + home_link + footer_text))
 
 
-@app.route('/youtubeDlSubtitles', methods=['GET'])
+@app.route('/youtubeDlSubtitles', methods=['POST'])
 @content_type('application/json')
 def youtubeDlSubtitles():
+    print(request.get_json())
     url = request.json['url']
     print(url)
     # print(srt.translate('en'))
@@ -153,4 +154,4 @@ if __name__ == "__main__":
     # Setting debug to True enables debug output. This line should be
     # removed before deploying a production app.
     app.debug = True
-    app.run()
+    app.run(host='127.0.0.1', port=5000)
