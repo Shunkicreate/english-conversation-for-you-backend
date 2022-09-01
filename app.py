@@ -8,6 +8,7 @@ import time
 import wrapt_timeout_decorator
 import traceback  # デバッグ用
 from googletrans import Translator
+import datetime
 
 # print a nice greeting.
 
@@ -72,6 +73,16 @@ def english_translator(result_obj):
             content['text'] = ' '.join(words[i * one_phrase_len:])
     return result_obj
 
+def obj2vtt(objs):
+    vtt_file = 'WEBVTT\n\n'
+    for i, obj in enumerate(objs):
+        vtt_file += 'cue-id-{}\n'.format(i)
+        start_timestamp = datetime.timedelta(seconds=obj['start'])
+        end_timestamp = start_timestamp + datetime.timedelta(seconds=obj['duration'])
+        vtt_file += '{} --> {}\n{}\n\n'.format(start_timestamp, end_timestamp, obj['text'])
+    print(vtt_file)
+    return vtt_file
+
 @wrapt_timeout_decorator.timeout(dec_timeout=500)
 def get_transcript_timeout(video_id, languages=['en']):
     print(video_id, languages)
@@ -87,6 +98,7 @@ def get_transcript_timeout(video_id, languages=['en']):
         # print(result_str.translate('en'))
         # result_str = result_str.translate('en')
         # result_str = translator.translate(result_str, dest="en")
+    result_str = obj2vtt(result_str)
     return result_str
 
 
