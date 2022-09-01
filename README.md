@@ -7,5 +7,7 @@ sudo apt upgrade
 sudo apt install python-pip
 
 https://www.twilio.com/blog/deploy-flask-python-app-aws-jp
+tmux attach -t english-conversation-for-you-backend
+
 
 http://ec2-13-112-150-63.ap-northeast-1.compute.amazonaws.com:8080/
