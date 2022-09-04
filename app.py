@@ -79,7 +79,7 @@ def shorterVTT(objs, lengths):
     return newobj
 
 def obj2vtt(objs):
-    newobj = shorterVTT(objs, 2)
+    obj = shorterVTT(objs, 2)
     vtt_file = 'WEBVTT\n\n'
     for i, obj in enumerate(objs):
         vtt_file += 'cue-id-{}\n'.format(i)
@@ -88,7 +88,6 @@ def obj2vtt(objs):
             datetime.timedelta(seconds=obj['duration'])
         vtt_file += '{} --> {}\n{}\n\n'.format(
             start_timestamp, end_timestamp, obj['text'])
-    print(vtt_file)
     return vtt_file
 
 
@@ -158,9 +157,7 @@ app.add_url_rule('/<username>', 'hello', (lambda username: header_text +
 @app.route('/youtubeDlSubtitles', methods=['POST'])
 @content_type('application/json')
 def youtubeDlSubtitles():
-    print(request.get_json())
     url = request.json['url']
-    print(url)
     video_id = get_video_id(url)
     result_str = ""
     result_str = proc(video_id)
