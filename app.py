@@ -1,23 +1,15 @@
-from flask import Flask
-import os
-from flask import Flask, abort, request, make_response, jsonify
+from flask import Flask, request, make_response, jsonify
 import functools
 from youtube_transcript_api import YouTubeTranscriptApi
 from re import sub, search, split
-import time
 import wrapt_timeout_decorator
 import traceback  # デバッグ用
-from googletrans import Translator
 import datetime
 from flask_cors import CORS
-# print a nice greeting.
-
 
 def say_hello(username="World"):
     return '<p>Hello %s!</p>\n' % username
 
-
-# some bits of text for the page.
 header_text = '''
     <html>\n<head> <title>EB Flask Test</title> </head>\n<body>'''
 instructions = '''
@@ -27,7 +19,6 @@ instructions = '''
 home_link = '<p><a href="/">Back</a></p>\n'
 footer_text = '</body>\n</html>'
 
-# EB looks for an 'app' callable by default.
 app = Flask(__name__)
 CORS(app, origins=["https://example.com",
      "http://localhost:3000", "http://localhost:3001"])
@@ -46,7 +37,6 @@ def content_type(value):
         return wrapper
     return _content_type
 
-
 def get_video_id(url: str):
     pattern = 'v=.*'
     # pattern  = '5G'
@@ -58,25 +48,38 @@ def get_video_id(url: str):
         video_id = sub('&', '', video_id)
     return (video_id)
 
-
-def english_translator(result_obj):
-    unite = ""
-    for i in result_obj:
-        unite += i['text']
-    translator = Translator()
-    result = translator.translate(unite, dest="en").text
-    words = split('[. ]', result)
-    one_phrase_len = int(len(words)/len(result_obj)) + 1
-    for i, content in enumerate(result_obj):
-        if (i != len(result_obj) - 1):
-            content['text'] = ' '.join(
-                words[i * one_phrase_len:i * one_phrase_len + one_phrase_len])
-        else:
-            content['text'] = ' '.join(words[i * one_phrase_len:])
-    return result_obj
-
+def shorterVTT(objs, lengths):
+    newobj = []
+    for i in range(0, len(objs) - lengths + 1, lengths):
+        addobj = {
+            'start': 0,
+            'text': "",
+            'duration': 0
+        }
+        for j in range(i, i + lengths):
+            if (i == j):
+                addobj['start'] += objs[j]['start']
+            addobj['text'] += objs[j]['text']
+            addobj['duration'] += objs[j]['duration']
+        newobj.append(addobj)
+    remainder = len(objs) % lengths
+    if(remainder):
+        addobj = {
+            'start': 0,
+            'text': "",
+            'duration': 0
+        }
+        for i in range(remainder):
+            if (i == 0):
+                addobj['start'] += objs[len(objs) - remainder + i]['start']
+            addobj['text'] += objs[len(objs) - remainder + i]['text']
+            addobj['duration'] += objs[len(objs) - remainder + i]['duration']
+        newobj.append(addobj)
+            
+    return newobj
 
 def obj2vtt(objs):
+    newobj = shorterVTT(objs, 2)
     vtt_file = 'WEBVTT\n\n'
     for i, obj in enumerate(objs):
         vtt_file += 'cue-id-{}\n'.format(i)
@@ -91,54 +94,48 @@ def obj2vtt(objs):
 
 @wrapt_timeout_decorator.timeout(dec_timeout=500)
 def get_transcript_timeout(video_id):
-    # result_str = YouTubeTranscriptApi.get_transcript(video_id)
-    # srt = YouTubeTranscriptApi.get_transcript("SW14tOda_kI")
-    print(video_id)
-    # retrieve the available transcripts
     languages = []
     transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
     for transcript in transcript_list:
-        if(transcript.language == '英語'):
+        if (transcript.language == '英語'):
             en_result_str = transcript.fetch()
             languages.append('英語')
-        if(transcript.language == '英語 (自動生成)'):
+        if (transcript.language == '英語 (自動生成)'):
             auto_en_result_str = transcript.fetch()
             languages.append('英語 (自動生成)')
-        if(transcript.language == 'スペイン語'):
+        if (transcript.language == 'スペイン語'):
             es_result_str = transcript.translate('en').fetch()
             languages.append('スペイン語')
-        if(transcript.language == 'フランス語'):
+        if (transcript.language == 'フランス語'):
             fr_result_str = transcript.translate('en').fetch()
             languages.append('フランス語')
-        if(transcript.language == 'ドイツ語'):
+        if (transcript.language == 'ドイツ語'):
             de_result_str = transcript.translate('en').fetch()
             languages.append('ドイツ語')
-        if(transcript.language == 'イタリア語'):
+        if (transcript.language == 'イタリア語'):
             it_result_str = transcript.translate('en').fetch()
             languages.append('イタリア語')
-        if(transcript.language == '日本語'):
+        if (transcript.language == '日本語'):
             ja_result_str = transcript.translate('en').fetch()
             languages.append('日本語')
-    if('英語' in languages):
+    if ('英語' in languages):
         return obj2vtt(en_result_str)
-    elif('英語 (自動生成)' in languages):
+    elif ('英語 (自動生成)' in languages):
         return obj2vtt(auto_en_result_str)
-    elif('スペイン語' in languages):
+    elif ('スペイン語' in languages):
         return obj2vtt(es_result_str)
-    elif('フランス語' in languages):
+    elif ('フランス語' in languages):
         return obj2vtt(fr_result_str)
-    elif('ドイツ語' in languages):
+    elif ('ドイツ語' in languages):
         return obj2vtt(de_result_str)
-    elif('イタリア語' in languages):
+    elif ('イタリア語' in languages):
         return obj2vtt(it_result_str)
-    elif('日本語' in languages):
+    elif ('日本語' in languages):
         return obj2vtt(ja_result_str)
     else:
         for transcript in transcript_list:
             return obj2vtt(transcript.translate('en').fetch())
-        
     return ""
-
 
 def proc(video_id):
     try:
@@ -151,13 +148,9 @@ def proc(video_id):
         print('no errors')
     return result
 
-
-# add a rule for the index page.
 app.add_url_rule('/', 'index', (lambda: header_text +
                  say_hello() + instructions + footer_text))
 
-# add a rule when the page is accessed with a name appended to the site
-# URL.
 app.add_url_rule('/<username>', 'hello', (lambda username: header_text +
                  say_hello(username) + home_link + footer_text))
 
@@ -171,13 +164,8 @@ def youtubeDlSubtitles():
     video_id = get_video_id(url)
     result_str = ""
     result_str = proc(video_id)
-
     return str(result_str)
 
-
-# run the app.
 if __name__ == "__main__":
-    # Setting debug to True enables debug output. This line should be
-    # removed before deploying a production app.
     app.debug = True
     app.run(host='127.0.0.1', port=5000)
