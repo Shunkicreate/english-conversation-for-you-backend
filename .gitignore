@@ -1,1 +1,4 @@
 .ssh
+
+cert.pem
+key.pem
